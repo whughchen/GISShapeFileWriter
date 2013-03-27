@@ -1,0 +1,9 @@
+@znzxgps714*()
+
+GPSDB
+
+172.17.1.45
+gpsdb
+taximeters_deal_data partition(P_201302)
+
+select count(*) from taxi_info;

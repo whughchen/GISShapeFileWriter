@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -62,41 +63,58 @@ public class RealtimeUpdater {
 	 */
 	
 	public static void main(String[] args) throws IOException, SQLException, SchemaException, InterruptedException {
-		// TODO Auto-generated method stub
 		//Method 1: detect a new files coming
-		//Method 2: to read a key/value pairs of from latest file
-		//Method 3: utilize this key/value pairs to edit shapefile' field of LATEST
-	
+		//Method 2: read a key/value pairs of OD Matrix from latest file
+		//Method 3: utilize this key/value pairs to edit shapefile's field of '2400'
+
+		String curLat = "";//���µ��ļ���·��
 		while(true){
 			//Method 1:
-			String curLat = "";
 	//		String dirPath = "/home/jags/Documents/geos/odsites/dat";
-			String dirPath = "/home/hadoop/real-time-OD/2013-03-20";
+		    SimpleDateFormat sdf1= new SimpleDateFormat("yyyy-MM-dd");
+		    SimpleDateFormat sdf2= new SimpleDateFormat("yyyy-MM-dd-HH");
+		    Date date=new Date();
+		    String today=sdf1.format(date);
+		    String file=sdf2.format(date);
+			String dirPath = "/server/real-time-OD/"+today+"/count";//paht of directory containing raw files
 			curLat = fileDetector(dirPath,curLat);
 			
-			//Method 2:
-			Map<String,Integer> list = new HashMap<String,Integer>();
-			list = getList(curLat);
-			
-			for(String s : list.keySet()){
-				System.out.println(s + "\t" + list.get(s));
+			//When new file is under detection
+			if(curLat!=null){
+				//Method 2:
+				Map<String,Integer> list = new HashMap<String,Integer>();
+				list = getList(curLat);
+				
+				for(String s : list.keySet()){
+					System.out.println(s + "\t" + list.get(s));
+				}
+				
+				//Method 3:
+		//		String path = "/usr/local/share/tomcat7/webapps/geoserver/data/data/sects/news.shp";
+				String path = "/home/hadoop/tomcat/webapps/geoserver/data/data/sects/news.shp";//path of shapefile in geoserver
+				shpEditor(path,list);
 			}
-			
-			//Method 3:
-	//		String path = "/usr/local/share/tomcat7/webapps/geoserver/data/data/sects/news.shp";
-			String path = "/home/hadoop/tomcat/webapps/geoserver/data/data/sects/news.shp";
-			shpEditor(path,list);
-			Thread.sleep(2*60*1000);
+			Thread.sleep(20*1000);
 		}
 	}
 	
+	
 	public static String fileDetector(String dirPath, String curLat){
+	    SimpleDateFormat sdf1= new SimpleDateFormat("yyyy-MM-dd");
+	    SimpleDateFormat sdf2= new SimpleDateFormat("yyyy-MM-dd-HH");
 		File root = new File(dirPath);
 		ArrayList<Long>	modiedTimes = new ArrayList<Long>();
 		ArrayList<File> files = new ArrayList<File>();
 		fetchFiles(root,files,modiedTimes);
-		curLat = files.get(modiedTimes.indexOf(Collections.max(modiedTimes))).getAbsolutePath();
-		return curLat;
+		if(files.size()==0)
+			return null;
+
+		String thisCurLat = files.get(modiedTimes.indexOf(Collections.max(modiedTimes))).getAbsolutePath();
+		if(curLat==null)return thisCurLat;
+		if(thisCurLat.compareTo(curLat)==0)
+			return null;
+		else
+			return thisCurLat;
 	}
 	
 	public static void fetchFiles(File root,ArrayList<File> files,ArrayList<Long> modiedTimes){
@@ -116,21 +134,60 @@ public class RealtimeUpdater {
 	}
 	
 	
-	public static Map<String,Integer> getList(String path) throws IOException{
+	/*public static Map<String,Integer> getList(String path) throws IOException{
 		Map<String,Integer> list = new HashMap<String,Integer>();
 		FileReader fr = new FileReader(path);
 		BufferedReader br = new BufferedReader(fr);
 		String line = br.readLine();
 		while(line!=null){
-			if(line.split("#").length==2&&line.split("#")[0].split(",").length==2){
-				String[] tokens = line.split("#")[0].split(",");
-				String id = tokens[0];
-				list.put(id, Integer.parseInt(tokens[1]));	
+//			if(line.split("#").length==2&&line.split("#")[0].split(",").length==2){
+//				String[] tokens = line.split("#")[0].split(",");
+//				String id = tokens[0];
+			if(line.split(",").length==3){
+				String[] tokens = line.split(",");
+				String id = tokens[1];
+				list.put(id, Integer.parseInt(tokens[2]));
+				
+				//list.put(id, Integer.parseInt(tokens[1]));	
 			}
 			line = br.readLine();
 		}
 		br.close();
 		fr.close();
+		return list;
+	}*/
+	
+	public static Map<String,Integer> getList(String path) throws IOException{
+		Map<String,Integer> list = new HashMap<String,Integer>();
+		FileReader fr = new FileReader(path);
+		BufferedReader br = new BufferedReader(fr);
+		String line = br.readLine();
+		String curTimestamp = null;
+		while(line!=null){
+			if(line.split(",").length==3){
+				curTimestamp = line.split(",")[0];
+			}
+			line = br.readLine();
+		}
+		//br.close();
+		//fr.close();
+		FileReader frfr = new FileReader(path);
+		BufferedReader brbr = new BufferedReader(frfr);
+		line = brbr.readLine();
+		while(line!=null){
+			if(line.split(",").length==3){
+				String[] tokens = line.split(",");
+				if(tokens[0].compareTo(curTimestamp)==0){
+					String id = tokens[1];
+					//int count=Integer.parseInt(tokens[2]);
+					//if(count==-1) count=0;
+					list.put(id, Integer.parseInt(tokens[2]));	
+				}
+			}
+			line = brbr.readLine();
+		}
+		brbr.close();
+		frfr.close();
 		return list;
 	}
 	

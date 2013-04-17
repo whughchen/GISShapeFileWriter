@@ -1,7 +1,7 @@
 GISShapeFileWriter
 ==================
 
-Forked form @jasg
+Forked form @jagielkads  
 
 read data from MYSQL and write to specific column of GIS shaple file.
 

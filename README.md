@@ -11,6 +11,6 @@ tutorial
 
 -----
 
-   java -Djava.ext.dirs=./lib -cp odVizDemo.jar com.siatcloud.odmatrix.viz.MysqlTOshp  > odVisualize.log & 2>&1
+     java -Djava.ext.dirs=./lib -cp odVizDemo.jar com.siatcloud.odmatrix.viz.MysqlTOshp  > odVisualize.log & 2>&1
 
 -----
